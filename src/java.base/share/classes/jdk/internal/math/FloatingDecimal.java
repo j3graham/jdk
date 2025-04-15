@@ -61,44 +61,6 @@ public class FloatingDecimal{
     static final int    INT_DECIMAL_DIGITS = 9;
 
     /**
-     * Converts a double precision floating point value to a <code>String</code>.
-     *
-     * @param d The double precision value.
-     * @return The value converted to a <code>String</code>.
-     */
-    public static String toJavaFormatString(double d) {
-        return getBinaryToASCIIConverter(d).toJavaFormatString();
-    }
-
-    /**
-     * Converts a single precision floating point value to a <code>String</code>.
-     *
-     * @param f The single precision value.
-     * @return The value converted to a <code>String</code>.
-     */
-    public static String toJavaFormatString(float f) {
-        return getBinaryToASCIIConverter(f).toJavaFormatString();
-    }
-
-    /**
-     * Appends a double precision floating point value to an <code>Appendable</code>.
-     * @param d The double precision value.
-     * @param buf The <code>Appendable</code> with the value appended.
-     */
-    public static void appendTo(double d, Appendable buf) {
-        getBinaryToASCIIConverter(d).appendTo(buf);
-    }
-
-    /**
-     * Appends a single precision floating point value to an <code>Appendable</code>.
-     * @param f The single precision value.
-     * @param buf The <code>Appendable</code> with the value appended.
-     */
-    public static void appendTo(float f, Appendable buf) {
-        getBinaryToASCIIConverter(f).appendTo(buf);
-    }
-
-    /**
      * Converts a <code>String</code> to a double precision floating point value.
      *
      * @param s The <code>String</code> to convert.
@@ -132,12 +94,6 @@ public class FloatingDecimal{
          * @return The value converted to a <code>String</code>.
          */
         String toJavaFormatString();
-
-        /**
-         * Appends a floating point value to an <code>Appendable</code>.
-         * @param buf The <code>Appendable</code> to receive the value.
-         */
-        void appendTo(Appendable buf);
 
         /**
          * Retrieves the decimal exponent most closely corresponding to this value.
@@ -198,17 +154,6 @@ public class FloatingDecimal{
         @Override
         public String toJavaFormatString() {
             return image;
-        }
-
-        @Override
-        public void appendTo(Appendable buf) {
-            if (buf instanceof StringBuilder) {
-                ((StringBuilder) buf).append(image);
-            } else if (buf instanceof StringBuffer) {
-                ((StringBuffer) buf).append(image);
-            } else {
-                assert false;
-            }
         }
 
         @Override
@@ -300,18 +245,6 @@ public class FloatingDecimal{
         public String toJavaFormatString() {
             int len = getChars(buffer);
             return new String(buffer, 0, len);
-        }
-
-        @Override
-        public void appendTo(Appendable buf) {
-            int len = getChars(buffer);
-            if (buf instanceof StringBuilder) {
-                ((StringBuilder) buf).append(buffer, 0, len);
-            } else if (buf instanceof StringBuffer) {
-                ((StringBuffer) buf).append(buffer, 0, len);
-            } else {
-                assert false;
-            }
         }
 
         @Override

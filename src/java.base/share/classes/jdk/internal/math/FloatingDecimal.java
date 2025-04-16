@@ -108,6 +108,7 @@ public class FloatingDecimal{
          */
         int getDigits(char[] digits);
 
+        String getDigits();
         /**
          * Indicates the sign of the value.
          * @return {@code value < 0.0}.
@@ -163,6 +164,11 @@ public class FloatingDecimal{
 
         @Override
         public int getDigits(char[] digits) {
+            throw new IllegalArgumentException("Exceptional value does not have digits");
+        }
+
+        @Override
+        public String getDigits() {
             throw new IllegalArgumentException("Exceptional value does not have digits");
         }
 
@@ -256,6 +262,11 @@ public class FloatingDecimal{
         public int getDigits(char[] digits) {
             System.arraycopy(this.digits, firstDigitIndex, digits, 0, this.nDigits);
             return this.nDigits;
+        }
+
+        @Override
+        public String getDigits() {
+            return new String(this.digits, firstDigitIndex, this.nDigits);
         }
 
         @Override

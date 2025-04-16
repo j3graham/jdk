@@ -63,7 +63,6 @@ import jdk.internal.math.FloatingDecimal;
  * derived by placing all the digits of the list to the right of the
  * decimal point, by 10^exponent.
  *
- * @see  Locale
  * @see  Format
  * @see  NumberFormat
  * @see  DecimalFormat
@@ -305,11 +304,66 @@ final class DigitList implements Cloneable {
         boolean hasBeenRoundedUp = fdConverter.digitsRoundedUp();
         boolean valueExactAsDecimal = fdConverter.decimalDigitsExact();
         assert !fdConverter.isExceptional();
-        String digitsString = fdConverter.toJavaFormatString();
+        String digitsString = fdConverter.getDigits();
 
-        set(isNegative, digitsString,
+        set(isNegative, digitsString, fdConverter.getDecimalExponent(),
             hasBeenRoundedUp, valueExactAsDecimal,
             maximumDigits, fixedPoint);
+    }
+
+    /**
+     * Generate a representation of the form DDDDD, DDDDD.DDDDD, or
+     * DDDDDE+/-DDDDD.
+     * @param roundedUp whether or not rounding up has already happened.
+     * @param valueExactAsDecimal whether or not collected digits provide
+     * an exact decimal representation of the value.
+     */
+    private void set(boolean isNegative, String s, int exp,
+                     boolean roundedUp, boolean valueExactAsDecimal,
+                     int maximumDigits, boolean fixedPoint) {
+        this.isNegative = isNegative;
+        int len = s.length();
+        extendDigits(len);
+        s.getChars(0, len, digits, 0);
+        count=len;
+        decimalAt = exp;
+
+        if (fixedPoint) {
+            // The negative of the exponent represents the number of leading
+            // zeros between the decimal and the first non-zero digit, for
+            // a value < 0.1 (e.g., for 0.00123, -decimalAt == 2).  If this
+            // is more than the maximum fraction digits, then we have an underflow
+            // for the printed representation.
+            if (-decimalAt > maximumDigits) {
+                // Handle an underflow to zero when we round something like
+                // 0.0009 to 2 fractional digits.
+                count = 0;
+                return;
+            } else if (-decimalAt == maximumDigits) {
+                // If we round 0.0009 to 3 fractional digits, then we have to
+                // create a new one digit in the least significant location.
+                if (shouldRoundUp(0, roundedUp, valueExactAsDecimal)) {
+                    count = 1;
+                    ++decimalAt;
+                    digits[0] = '1';
+                } else {
+                    count = 0;
+                }
+                return;
+            }
+            // else fall through
+        }
+
+        // Eliminate trailing zeros.
+        while (count > 1 && digits[count - 1] == '0') {
+            --count;
+        }
+
+        // Eliminate digits beyond maximum digits to be displayed.
+        // Round up if appropriate.
+        round(fixedPoint ? (maximumDigits + decimalAt) : maximumDigits,
+                roundedUp, valueExactAsDecimal);
+
     }
 
     /**

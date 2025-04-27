@@ -32,7 +32,7 @@ public class ValueOfDouble {
     }
 
     private static void checkValue(double value) {
-        var expected = new BigDecimal(Double.toString(value));
+        BigDecimal expected = new BigDecimal(Double.toString(value));
         assertEquals(expected, BigDecimal.valueOf(value));
     }
 

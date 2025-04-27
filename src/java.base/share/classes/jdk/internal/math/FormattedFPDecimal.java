@@ -69,6 +69,66 @@ public final class FormattedFPDecimal {
         };
     }
 
+    /**
+     * Returns a FormattedFPDecimal with the appropriate precision for
+     * {@link Double#toString(double)}.
+     *
+     * @see java.math.BigDecimal#valueOf(double)
+     */
+    public static FormattedFPDecimal valueForDoubleToString(double v) {
+        FormattedFPDecimal fd = new FormattedFPDecimal();
+        DoubleToDecimal.split(v, fd);
+
+        final int expR = fd.getExponentRounded();
+
+        // Adjust precision, following rules for Double.toString formatting to determine the number of
+        // significant digits required. There is always at least one and some cases require an extra one
+        // to force a digit after the decimal. Non-zero trailing digits are not removed.
+
+        final int targetPrecision = switch (expR) {
+            case -3, -2, -1 ->
+                // no extra trailing digit needed
+                    1;
+
+            case 0, 1, 2, 3, 4, 5, 6 ->
+                // keep significant digits to left of decimal, plus leave a trailing zero
+                    (expR + 1) + 1;
+
+            default ->
+                // require at least 2 digits, to include trailing digit when there is a single digit
+                    2;
+        };
+
+        long s = fd.f;
+        int prec = fd.n;
+
+        if (prec < targetPrecision) {
+            // add zeros needed to reach target precision
+            int addZeros = targetPrecision - prec;
+            s *= MathUtils.pow10(addZeros); // addZeros will be at most 8
+            prec = targetPrecision;
+        } else {
+            // remove insignificant trailing zeros to try to reach target precision
+            // without altering the value
+            while (prec > targetPrecision && s % 10 == 0) {
+                s = s / 10;
+                prec--;
+            }
+        }
+        int eNew = expR - prec + 1;  // calculate new e based on updated precision
+        fd.set(s, eNew, prec);
+
+        return fd;
+    }
+
+    public long getSignificand () {
+        return f;
+    }
+
+    public int getPrecision() {
+        return n;
+    }
+
     public void set(long f, int e, int n) {
         /* Initially, n = 0 if f = 0, and 10^{n-1} <= f < 10^n if f != 0 */
         this.f = f;

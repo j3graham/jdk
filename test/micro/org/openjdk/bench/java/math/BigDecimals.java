@@ -227,4 +227,32 @@ public class BigDecimals {
             bh.consume(c.compareTo(s));
         }
     }
+
+
+    /** Invokes the valueOf(double) of BigDecimal with various different values. */
+    @Benchmark
+    @OperationsPerInvocation(TEST_SIZE)
+    public void testValueOfWithDouble(Blackhole bh) {
+        for (double s : doubleInputs) {
+            bh.consume(BigDecimal.valueOf(s));
+        }
+    }
+
+    /** Invokes the valueOf(double) of BigDecimal with various different values. */
+    @Benchmark
+    @OperationsPerInvocation(TEST_SIZE)
+    public void testValueOfWithDoubleString(Blackhole bh) {
+        for (double s : doubleInputs) {
+            bh.consume(new BigDecimal(Double.toString(s)));
+        }
+    }
+
+    /** Invokes the valueOf(double) of BigDecimal with various different values. */
+    @Benchmark
+    @OperationsPerInvocation(TEST_SIZE)
+    public void testValueOfWithFloatString(Blackhole bh) {
+        for (double s : doubleInputs) {
+            bh.consume(new BigDecimal(Float.toString(Math.clamp((float)s,-Float.MIN_VALUE,Float.MAX_VALUE))));
+        }
+    }
 }

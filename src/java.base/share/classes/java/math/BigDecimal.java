@@ -1413,7 +1413,6 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
                 s, scale, prec);
     }
 
-
     // Arithmetic Operations
     /**
      * Returns a {@code BigDecimal} whose value is {@code (this +

@@ -22,12 +22,11 @@ public class ValueOfDouble {
         checkValue(Double.MAX_VALUE);
         checkValue(Double.MIN_VALUE);
 
-
         for (int i = 1; i < DIGITS.length(); i++) {
             double sigDigits = Double.parseDouble(DIGITS.substring(0, i));
             for (int exp = 0; exp < 30; exp++) {
                 checkValue(sigDigits * Math.pow(10, exp));
-                checkValue(sigDigits / Math.pow(10, exp));
+                checkValue(sigDigits * Math.pow(10, -exp));
             }
         }
     }

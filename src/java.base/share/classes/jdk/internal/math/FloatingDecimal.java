@@ -25,6 +25,7 @@
 
 package jdk.internal.math;
 
+import java.util.Arrays;
 import java.util.regex.*;
 
 /**
@@ -826,6 +827,77 @@ public class FloatingDecimal{
                 59,
                 61,
         };
+
+        private int getChars(char[] result) {
+            assert nDigits <= 19 : nDigits; // generous bound on size of nDigits
+            int i = 0;
+            if (isNegative) {
+                result[0] = '-';
+                i = 1;
+            }
+            if (decExponent > 0 && decExponent < 8) {
+                // print digits.digits.
+                int charLength = Math.min(nDigits, decExponent);
+                System.arraycopy(digits, firstDigitIndex, result, i, charLength);
+                i += charLength;
+                if (charLength < decExponent) {
+                    charLength = decExponent - charLength;
+                    Arrays.fill(result,i,i+charLength,'0');
+                    i += charLength;
+                    result[i++] = '.';
+                    result[i++] = '0';
+                } else {
+                    result[i++] = '.';
+                    if (charLength < nDigits) {
+                        int t = nDigits - charLength;
+                        System.arraycopy(digits, firstDigitIndex+charLength, result, i, t);
+                        i += t;
+                    } else {
+                        result[i++] = '0';
+                    }
+                }
+            } else if (decExponent <= 0 && decExponent > -3) {
+                result[i++] = '0';
+                result[i++] = '.';
+                if (decExponent != 0) {
+                    Arrays.fill(result, i, i-decExponent, '0');
+                    i -= decExponent;
+                }
+                System.arraycopy(digits, firstDigitIndex, result, i, nDigits);
+                i += nDigits;
+            } else {
+                result[i++] = digits[firstDigitIndex];
+                result[i++] = '.';
+                if (nDigits > 1) {
+                    System.arraycopy(digits, firstDigitIndex+1, result, i, nDigits - 1);
+                    i += nDigits - 1;
+                } else {
+                    result[i++] = '0';
+                }
+                result[i++] = 'E';
+                int e;
+                if (decExponent <= 0) {
+                    result[i++] = '-';
+                    e = -decExponent + 1;
+                } else {
+                    e = decExponent - 1;
+                }
+                // decExponent has 1, 2, or 3, digits
+                if (e <= 9) {
+                    result[i++] = (char) (e + '0');
+                } else if (e <= 99) {
+                    result[i++] = (char) (e / 10 + '0');
+                    result[i++] = (char) (e % 10 + '0');
+                } else {
+                    result[i++] = (char) (e / 100 + '0');
+                    e %= 100;
+                    result[i++] = (char) (e / 10 + '0');
+                    result[i++] = (char) (e % 10 + '0');
+                }
+            }
+            return i;
+        }
+
     }
 
     private static final ThreadLocal<BinaryToASCIIBuffer> threadLocalBinaryToASCIIBuffer =

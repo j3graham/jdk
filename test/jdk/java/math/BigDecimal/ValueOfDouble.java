@@ -21,6 +21,7 @@ public class ValueOfDouble {
         checkValue(-Math.PI);
         checkValue(Double.MAX_VALUE);
         checkValue(Double.MIN_VALUE);
+        checkValue(1e-44); // lots of digits with lots of 9s that round to a leading 1
 
         for (int i = 1; i < DIGITS.length(); i++) {
             double sigDigits = Double.parseDouble(DIGITS.substring(0, i));

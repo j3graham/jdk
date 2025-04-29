@@ -21,12 +21,14 @@ public class ValueOfDouble {
         checkValue(-Math.PI);
         checkValue(Double.MAX_VALUE);
         checkValue(Double.MIN_VALUE);
+        checkValue(1e-44); // Lots of digits with lots of 9s
 
         for (int i = 1; i < DIGITS.length(); i++) {
-            double sigDigits = Double.parseDouble(DIGITS.substring(0, i));
-            for (int exp = 0; exp < 30; exp++) {
-                checkValue(sigDigits * Math.pow(10, exp));
-                checkValue(sigDigits * Math.pow(10, -exp));
+            String prefix = DIGITS.substring(0, i);
+            for (int exp = -30; exp < 30; exp++) {
+                double value = Double.parseDouble(prefix + "e" + exp);
+                checkValue(value);
+                checkValue(-value);
             }
         }
     }

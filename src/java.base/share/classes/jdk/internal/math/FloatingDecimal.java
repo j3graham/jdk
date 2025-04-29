@@ -230,7 +230,32 @@ public class FloatingDecimal{
 
         @Override
         public String getDigits() {
-            return new String(this.digits, firstDigitIndex, this.nDigits);
+
+            String s = new String(this.digits, firstDigitIndex, this.nDigits);
+
+            switch (decExponent) {
+                case -2, -1, -0 -> {
+                    // no extra trailing digit needed
+                }
+
+                case 1, 2, 3, 4, 5, 6, 7 -> {
+                    // keep significant digits to left of decimal, plus leave a trailing zero
+                    s=s+"0";
+                    decExponent--;
+                }
+
+                default ->{
+                    // require at least 2 digits, to include trailing digit when there is a single digit
+                    if(nDigits<2){
+                        s=s+"0";
+                        decExponent--;
+                    }
+                }
+
+
+            };
+
+            return s;
         }
 
         @Override

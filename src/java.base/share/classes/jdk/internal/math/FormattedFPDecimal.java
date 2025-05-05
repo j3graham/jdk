@@ -57,8 +57,7 @@ public final class FormattedFPDecimal {
     }
 
     public static FormattedFPDecimal valueOf(double v, int prec, char form) {
-        FormattedFPDecimal fd = new FormattedFPDecimal();
-        DoubleToDecimal.split(v, fd);
+        FormattedFPDecimal fd = split(v);
         return switch (form) {
             case SCIENTIFIC -> fd.scientific(prec);
             case PLAIN      -> fd.plain(prec);
@@ -69,6 +68,12 @@ public final class FormattedFPDecimal {
         };
     }
 
+    private static FormattedFPDecimal split(double v) {
+        FormattedFPDecimal fd = new FormattedFPDecimal();
+        DoubleToDecimal.split(v, fd);
+        return fd;
+    }
+
     /**
      * Returns a FormattedFPDecimal with the appropriate precision for
      * {@link Double#toString(double)}.
@@ -76,47 +81,51 @@ public final class FormattedFPDecimal {
      * @see java.math.BigDecimal#valueOf(double)
      */
     public static FormattedFPDecimal valueForDoubleToString(double v) {
-        FormattedFPDecimal fd = new FormattedFPDecimal();
-        DoubleToDecimal.split(v, fd);
-
+        FormattedFPDecimal fd = split(v);
         final int expR = fd.getExponentRounded();
 
-        // Adjust precision, following rules for Double.toString formatting to determine the number of
-        // significant digits required. There is always at least one and some cases require an extra one
-        // to force a digit after the decimal. Non-zero trailing digits are not removed.
+        // Adjust precision, following rules for Double.toString formatting to
+        // determine the precision required. There is always at least one digit
+        // and some cases require an extra one to force a digit after the decimal.
+        // No additional rounding is performed; no significant trailing digits
+        // are removed.
 
-        final int targetPrecision = switch (expR) {
+        final int nTarget = switch (expR) {
             case -3, -2, -1 ->
-                // no extra trailing digit needed
+                // No extra trailing digit needed
                     1;
 
             case 0, 1, 2, 3, 4, 5, 6 ->
-                // keep significant digits to left of decimal, plus leave a trailing zero
+                // Keep significant digits to left of decimal, plus leave a
+                // trailing zero
                     (expR + 1) + 1;
 
             default ->
-                // require at least 2 digits, to include trailing digit when there is a single digit
+                // Require at least 2 digits, to include trailing digit when
+                // there is a single digit
                     2;
         };
 
         long s = fd.f;
-        int prec = fd.n;
+        int nOrig = fd.n;
 
-        if (prec < targetPrecision) {
-            // add zeros needed to reach target precision
-            int addZeros = targetPrecision - prec;
+        if (nOrig < nTarget) {
+            // Add zeros needed to reach target precision
+            int addZeros = nTarget - nOrig;
             s *= MathUtils.pow10(addZeros); // addZeros will be at most 8
-            prec = targetPrecision;
+            nOrig = nTarget;
         } else {
-            // remove insignificant trailing zeros to try to reach target precision
-            // without altering the value
-            while (prec > targetPrecision && s % 10 == 0) {
+            // Remove insignificant trailing zeros to try to reach target precision
+            while (nOrig > nTarget && s % 10 == 0) {
                 s = s / 10;
-                prec--;
+                nOrig--;
             }
         }
-        int eNew = expR - prec + 1;  // calculate new e based on updated precision
-        fd.set(s, eNew, prec);
+
+        // Calculate new e based on updated precision, given expR defined as
+        // n + e - 1
+        int eNew = expR - nOrig + 1;
+        fd.set(s, eNew, nOrig);
 
         return fd;
     }

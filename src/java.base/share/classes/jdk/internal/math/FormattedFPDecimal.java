@@ -107,35 +107,45 @@ public final class FormattedFPDecimal {
         };
 
         long s = fd.f;
-        int nOrig = fd.n;
+        int n = fd.n;
 
-        if (nOrig < nTarget) {
+        if (n < nTarget) {
             // Add zeros needed to reach target precision
-            int addZeros = nTarget - nOrig;
+            int addZeros = nTarget - n;
             s *= MathUtils.pow10(addZeros); // addZeros will be at most 8
-            nOrig = nTarget;
+            n = nTarget;
         } else {
             // Remove insignificant trailing zeros to try to reach target precision
-            while (nOrig > nTarget && s % 10 == 0) {
+            while (n > nTarget && s % 10 == 0) {
                 s = s / 10;
-                nOrig--;
+                n--;
             }
         }
 
         // Calculate new e based on updated precision, given expR defined as
         // n + e - 1
-        int eNew = expR - nOrig + 1;
-        fd.set(s, eNew, nOrig);
+        int eNew = expR - n + 1;
+        fd.set(s, eNew, n);
 
         return fd;
     }
 
-    public long getSignificand () {
+    public long getSignificand() {
         return f;
     }
 
     public int getPrecision() {
         return n;
+    }
+
+    /**
+     * Value <code>scale</code>, such that
+     * <code> value = (f &times; 10<sup>-scale</sup>)</code>
+     * <p/>
+     * This is the same as the definition used by {@link java.math.BigDecimal}
+     */
+    public int getScale() {
+        return -e;
     }
 
     public void set(long f, int e, int n) {

@@ -1398,19 +1398,14 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
             throw new NumberFormatException("Infinite or NaN");
         }
 
-        FormattedFPDecimal fmt = FormattedFPDecimal.valueForDoubleToString(Math.abs(val));
+        var fmt = FormattedFPDecimal.valueForDoubleToString(Math.abs(val));
         long s = fmt.getSignificand();
         if (val < 0) {
+            // Original s is always positive, so no risk of overflow
             s = -s;
         }
 
-        int expR = fmt.getExponentRounded();
-        int prec = fmt.getPrecision();
-        int scale = -(expR - prec + 1);
-
-        return new BigDecimal(
-                s == INFLATED ? INFLATED_BIGINT : null,
-                s, scale, prec);
+        return valueOf(s, fmt.getScale(), fmt.getPrecision());
     }
 
     // Arithmetic Operations

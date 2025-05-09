@@ -21,7 +21,7 @@ public class ValueOfDouble {
         checkValue(-Math.PI);
         checkValue(Double.MAX_VALUE);
         checkValue(Double.MIN_VALUE);
-        checkValue(1e-44); // lots of digits with lots of 9s that round to a leading 1
+        checkValue(1e-44); // Lots of digits with lots of 9s
 
         for (int i = 1; i < DIGITS.length(); i++) {
             String prefix = DIGITS.substring(0, i);

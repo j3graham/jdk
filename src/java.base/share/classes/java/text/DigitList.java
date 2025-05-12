@@ -104,7 +104,6 @@ final class DigitList implements Cloneable {
     public int count = 0;
     public char[] digits = new char[MAX_COUNT];
 
-    private char[] data;
     private RoundingMode roundingMode = RoundingMode.HALF_EVEN;
     private boolean isNegative = false;
 
@@ -302,14 +301,19 @@ final class DigitList implements Cloneable {
     final void set(boolean isNegative, double source, int maximumDigits, boolean fixedPoint) {
 
         FloatingDecimal.BinaryToASCIIConverter fdConverter  = FloatingDecimal.getBinaryToASCIIConverter(source);
+
         boolean hasBeenRoundedUp = fdConverter.digitsRoundedUp();
         boolean valueExactAsDecimal = fdConverter.decimalDigitsExact();
         assert !fdConverter.isExceptional();
-        String digitsString = fdConverter.toJavaFormatString();
 
-        set(isNegative, digitsString,
-            hasBeenRoundedUp, valueExactAsDecimal,
-            maximumDigits, fixedPoint);
+        var digits1=fdConverter.getDigits();
+        int scale=digits1.length()-fdConverter.getDecimalExponent();
+        if(Double.compare(source, 0.0) == 0) {
+            digits1="";
+            scale=0;
+        }
+        set(isNegative, digits1, scale, hasBeenRoundedUp,valueExactAsDecimal,maximumDigits, fixedPoint);
+
     }
 
 
@@ -326,7 +330,6 @@ final class DigitList implements Cloneable {
 
         this.isNegative = isNegative;
         int len = s.length();
-        char[] source = getDataChars(len);
         s.getChars(0, len, digits, 0);
         decimalAt = len - scale;
         count = len;
@@ -369,93 +372,6 @@ final class DigitList implements Cloneable {
 
     }
 
-
-    /**
-     * Generate a representation of the form DDDDD, DDDDD.DDDDD, or
-     * DDDDDE+/-DDDDD.
-     * @param roundedUp whether or not rounding up has already happened.
-     * @param valueExactAsDecimal whether or not collected digits provide
-     * an exact decimal representation of the value.
-     */
-    private void set(boolean isNegative, String s,
-                     boolean roundedUp, boolean valueExactAsDecimal,
-                     int maximumDigits, boolean fixedPoint) {
-
-        this.isNegative = isNegative;
-        int len = s.length();
-        char[] source = getDataChars(len);
-        s.getChars(0, len, source, 0);
-
-        decimalAt = -1;
-        count = 0;
-        int exponent = 0;
-        // Number of zeros between decimal point and first non-zero digit after
-        // decimal point, for numbers < 1.
-        int leadingZerosAfterDecimal = 0;
-        boolean nonZeroDigitSeen = false;
-
-        for (int i = 0; i < len; ) {
-            char c = source[i++];
-            if (c == '.') {
-                decimalAt = count;
-            } else if (c == 'e' || c == 'E') {
-                exponent = parseInt(source, i, len);
-                break;
-            } else {
-                if (!nonZeroDigitSeen) {
-                    nonZeroDigitSeen = (c != '0');
-                    if (!nonZeroDigitSeen && decimalAt != -1)
-                        ++leadingZerosAfterDecimal;
-                }
-                if (nonZeroDigitSeen) {
-                    digits[count++] = c;
-                }
-            }
-        }
-        if (decimalAt == -1) {
-            decimalAt = count;
-        }
-        if (nonZeroDigitSeen) {
-            decimalAt += exponent - leadingZerosAfterDecimal;
-        }
-
-        if (fixedPoint) {
-            // The negative of the exponent represents the number of leading
-            // zeros between the decimal and the first non-zero digit, for
-            // a value < 0.1 (e.g., for 0.00123, -decimalAt == 2).  If this
-            // is more than the maximum fraction digits, then we have an underflow
-            // for the printed representation.
-            if (-decimalAt > maximumDigits) {
-                // Handle an underflow to zero when we round something like
-                // 0.0009 to 2 fractional digits.
-                count = 0;
-                return;
-            } else if (-decimalAt == maximumDigits) {
-                // If we round 0.0009 to 3 fractional digits, then we have to
-                // create a new one digit in the least significant location.
-                if (shouldRoundUp(0, roundedUp, valueExactAsDecimal)) {
-                    count = 1;
-                    ++decimalAt;
-                    digits[0] = '1';
-                } else {
-                    count = 0;
-                }
-                return;
-            }
-            // else fall through
-        }
-
-        // Eliminate trailing zeros.
-        while (count > 1 && digits[count - 1] == '0') {
-            --count;
-        }
-
-        // Eliminate digits beyond maximum digits to be displayed.
-        // Round up if appropriate.
-        round(fixedPoint ? (maximumDigits + decimalAt) : maximumDigits,
-              roundedUp, valueExactAsDecimal);
-
-     }
 
     /**
      * Round the representation to the given number of digits.
@@ -796,7 +712,6 @@ final class DigitList implements Cloneable {
             // data and tempBuilder do not need to be copied because they do
             // not carry significant information. They will be recreated on demand.
             // Setting them to null is needed to avoid sharing across clones.
-            other.data = null;
             other.tempBuilder = null;
 
             return other;
@@ -819,28 +734,6 @@ final class DigitList implements Cloneable {
         }
 
         return true;
-    }
-
-    private static final int parseInt(char[] str, int offset, int strLen) {
-        char c;
-        boolean positive = true;
-        if ((c = str[offset]) == '-') {
-            positive = false;
-            offset++;
-        } else if (c == '+') {
-            offset++;
-        }
-
-        int value = 0;
-        while (offset < strLen) {
-            c = str[offset++];
-            if (c >= '0' && c <= '9') {
-                value = value * 10 + (c - '0');
-            } else {
-                break;
-            }
-        }
-        return positive ? value : -value;
     }
 
     // The digit part of -9223372036854775808L
@@ -876,10 +769,4 @@ final class DigitList implements Cloneable {
         }
     }
 
-    private final char[] getDataChars(int length) {
-        if (data == null || data.length < length) {
-            data = new char[length];
-        }
-        return data;
-    }
 }

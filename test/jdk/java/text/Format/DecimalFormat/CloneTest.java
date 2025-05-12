@@ -89,15 +89,9 @@ public class CloneTest {
                 Object digits = valFromDigitList(original, "digits");
                 assertNotSame(digits, valFromDigitList(dfClone, "digits"));
 
-
-                Object data = valFromDigitList(original, "data");
-                if (data != null) {
-                    assertNotSame(data, valFromDigitList(dfClone, "data"));
-                }
-
                 Object tempBuilder = valFromDigitList(original, "tempBuilder");
                 if (tempBuilder != null) {
-                    assertNotSame(data, valFromDigitList(dfClone, "data"));
+                    assertNotSame(tempBuilder, valFromDigitList(dfClone, "tempBuilder"));
                 }
 
                 assertEquals(digitListField.get(original), digitListField.get(dfClone));

@@ -602,38 +602,29 @@ final class DigitList implements Cloneable {
     final void set(boolean isNegative, long source, int maximumDigits) {
         this.isNegative = isNegative;
 
-        // This method does not expect a negative number. However,
-        // "source" can be a Long.MIN_VALUE (-9223372036854775808),
-        // if the number being formatted is a Long.MIN_VALUE.  In that
-        // case, it will be formatted as -Long.MIN_VALUE, a number
-        // which is outside the legal range of a long, but which can
-        // be represented by DigitList.
-        if (source <= 0) {
-            if (source == Long.MIN_VALUE) {
-                decimalAt = count = MAX_COUNT;
-                System.arraycopy(LONG_MIN_REP, 0, digits, 0, count);
-            } else {
-                decimalAt = count = 0; // Values <= 0 format as zero
-            }
-        } else {
-            // Rewritten to improve performance.  I used to call
-            // Long.toString(), which was about 4x slower than this code.
-            int left = MAX_COUNT;
-            int right;
-            while (source > 0) {
-                digits[--left] = (char)('0' + (source % 10));
-                source /= 10;
-            }
-            decimalAt = MAX_COUNT - left;
-            // Don't copy trailing zeros.  We are guaranteed that there is at
-            // least one non-zero digit, so we don't have to check lower bounds.
-            right = MAX_COUNT - 1;
-            while (digits[right] == '0') {
-                --right;
-            }
-            count = right - left + 1;
-            System.arraycopy(digits, left, digits, 0, count);
+        // Work on negatives to avoid issues with Long.MIN_VALUE
+        // Note that if source = Long.MIN_VALUE, then -Long.MIN_VALUE is
+        // still negative
+        source = -source;
+
+        // trim and count trailing zeros
+        int trailingZeros = 0;
+        while (source < 0 && source % 10 == 0) {
+            source /= 10;
+            trailingZeros++;
         }
+
+        int left = MAX_COUNT;
+        // develop significant digits
+        while (source < 0) {
+            digits[--left] = (char)('0' - (source % 10));
+            source /= 10;
+        }
+        count = MAX_COUNT - left;
+        decimalAt = count + trailingZeros;
+
+        // shift digits left to the start of the array
+        System.arraycopy(digits, left, digits, 0, count);
         if (maximumDigits > 0) {
             roundInt(maximumDigits);
         }

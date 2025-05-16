@@ -63,7 +63,7 @@ import jdk.internal.math.FloatingDecimal;
  * derived by placing all the digits of the list to the right of the
  * decimal point, by 10^exponent.
  *
- * @see  Locale
+ * @see  java.util.Locale
  * @see  Format
  * @see  NumberFormat
  * @see  DecimalFormat
@@ -135,17 +135,6 @@ final class DigitList implements Cloneable {
         roundingMode = r;
     }
 
-    /**
-     * Clears out the digits.
-     * Use before appending them.
-     * Typically, you set a series of digits with append, then at the point
-     * you hit the decimal point, you set myDigitList.decimalAt = myDigitList.count;
-     * then go on appending digits.
-     */
-    public void clear () {
-        decimalAt = 0;
-        count = 0;
-    }
 
     /**
      * Appends a digit to the list, extending the list when necessary.
@@ -196,10 +185,10 @@ final class DigitList implements Cloneable {
             return Long.MIN_VALUE;
         }
 
-        StringBuilder temp = getStringBuilder();
-        temp.append(digits, 0, count);
-        temp.append("0".repeat(Math.max(0, decimalAt - count)));
-        return Long.parseLong(temp.toString());
+        long base = Long.parseLong(new String(digits, 0, count));
+
+        long mul = Math.powExact(10L, decimalAt - count);
+        return Math.multiplyExact(base, mul);
     }
 
     /**
@@ -209,11 +198,7 @@ final class DigitList implements Cloneable {
      */
     public final BigDecimal getBigDecimal() {
         if (count == 0) {
-            if (decimalAt == 0) {
-                return BigDecimal.ZERO;
-            } else {
-                return new BigDecimal("0E" + decimalAt);
-            }
+            return BigDecimal.valueOf(0, -decimalAt);
         }
 
        if (decimalAt == count) {

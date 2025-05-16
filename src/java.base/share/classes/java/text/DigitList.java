@@ -197,10 +197,9 @@ final class DigitList implements Cloneable {
             return Long.MIN_VALUE;
         }
 
-        StringBuilder temp = getStringBuilder();
-        temp.append(digits, 0, count);
-        temp.append("0".repeat(Math.max(0, decimalAt - count)));
-        return Long.parseLong(temp.toString());
+        long base = Long.parseLong(new String(digits, 0, count));
+        long multiplier = Math.powExact(10L, decimalAt - count);
+        return Math.multiplyExact(base, multiplier);
     }
 
     /**
@@ -210,11 +209,7 @@ final class DigitList implements Cloneable {
      */
     public final BigDecimal getBigDecimal() {
         if (count == 0) {
-            if (decimalAt == 0) {
-                return BigDecimal.ZERO;
-            } else {
-                return new BigDecimal("0E" + decimalAt);
-            }
+            return BigDecimal.valueOf(0, -decimalAt);
         }
 
        if (decimalAt == count) {

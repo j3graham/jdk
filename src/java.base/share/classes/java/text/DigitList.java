@@ -295,14 +295,18 @@ final class DigitList implements Cloneable {
      * fractional digits to be converted.  If false, total digits.
      */
     final void set(boolean isNegative, double source, int maximumDigits, boolean fixedPoint) {
+        this.isNegative = isNegative;
 
         FloatingDecimal.BinaryToASCIIConverter fdConverter  = FloatingDecimal.getBinaryToASCIIConverter(source);
         boolean hasBeenRoundedUp = fdConverter.digitsRoundedUp();
         boolean valueExactAsDecimal = fdConverter.decimalDigitsExact();
         assert !fdConverter.isExceptional();
-        String digitsString = fdConverter.toJavaFormatString();
 
-        set(isNegative, digitsString,
+        count = fdConverter.getDigits(digits);
+
+        int exp = fdConverter.getDecimalExponent() - count;
+
+        adjust(exp,
             hasBeenRoundedUp, valueExactAsDecimal,
             maximumDigits, fixedPoint);
     }
@@ -314,47 +318,16 @@ final class DigitList implements Cloneable {
      * @param valueExactAsDecimal whether or not collected digits provide
      * an exact decimal representation of the value.
      */
-    private void set(boolean isNegative, String s,
-                     boolean roundedUp, boolean valueExactAsDecimal,
-                     int maximumDigits, boolean fixedPoint) {
+    private void adjust(int exp,
+                        boolean roundedUp, boolean valueExactAsDecimal,
+                        int maximumDigits, boolean fixedPoint) {
 
-        this.isNegative = isNegative;
-        int len = s.length();
-        char[] source = getDataChars(len);
-        s.getChars(0, len, source, 0);
-
-        decimalAt = -1;
-        count = 0;
-        int exponent = 0;
-        // Number of zeros between decimal point and first non-zero digit after
-        // decimal point, for numbers < 1.
-        int leadingZerosAfterDecimal = 0;
-        boolean nonZeroDigitSeen = false;
-
-        for (int i = 0; i < len; ) {
-            char c = source[i++];
-            if (c == '.') {
-                decimalAt = count;
-            } else if (c == 'e' || c == 'E') {
-                exponent = parseInt(source, i, len);
-                break;
-            } else {
-                if (!nonZeroDigitSeen) {
-                    nonZeroDigitSeen = (c != '0');
-                    if (!nonZeroDigitSeen && decimalAt != -1)
-                        ++leadingZerosAfterDecimal;
-                }
-                if (nonZeroDigitSeen) {
-                    digits[count++] = c;
-                }
-            }
+        if(!nonZeroAfterIndex(0)){
+            count=0;
+            decimalAt=0;
+            return;
         }
-        if (decimalAt == -1) {
-            decimalAt = count;
-        }
-        if (nonZeroDigitSeen) {
-            decimalAt += exponent - leadingZerosAfterDecimal;
-        }
+        decimalAt = count + exp;
 
         if (fixedPoint) {
             // The negative of the exponent represents the number of leading
@@ -645,10 +618,12 @@ final class DigitList implements Cloneable {
      * fractional digits to be converted.  If false, total digits.
      */
     final void set(boolean isNegative, BigDecimal source, int maximumDigits, boolean fixedPoint) {
-        String s = source.toString();
+        this.isNegative = isNegative;
+        String s = source.unscaledValue().toString();
         extendDigits(s.length());
-
-        set(isNegative, s,
+        s.getChars(0, s.length(), digits, 0);
+        count=s.length();
+        adjust(-source.scale(),
             false, true,
             maximumDigits, fixedPoint);
     }

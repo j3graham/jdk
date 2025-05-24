@@ -104,7 +104,6 @@ final class DigitList implements Cloneable {
     public int count = 0;
     public char[] digits = new char[MAX_COUNT];
 
-    private char[] data;
     private RoundingMode roundingMode = RoundingMode.HALF_EVEN;
     private boolean isNegative = false;
 
@@ -696,37 +695,26 @@ final class DigitList implements Cloneable {
             System.arraycopy(digits, 0, newDigits, 0, digits.length);
             other.digits = newDigits;
 
-            // Data does not need to be copied because it does
-            // not carry significant information. It will be recreated on demand.
-            // Setting it to null is needed to avoid sharing across clones.
-            other.data = null;
-
             return other;
         } catch (CloneNotSupportedException e) {
             throw new InternalError(e);
         }
     }
 
-    private static int parseInt(char[] str, int offset, int strLen) {
-        char c;
-        boolean positive = true;
-        if ((c = str[offset]) == '-') {
-            positive = false;
-            offset++;
-        } else if (c == '+') {
-            offset++;
+    /**
+     * Returns true if this DigitList represents Long.MIN_VALUE;
+     * false, otherwise.  This is required so that getLong() works.
+     */
+    private boolean isLongMIN_VALUE() {
+        if (decimalAt != count || count != MAX_COUNT) {
+            return false;
         }
 
-        int value = 0;
-        while (offset < strLen) {
-            c = str[offset++];
-            if (c >= '0' && c <= '9') {
-                value = value * 10 + (c - '0');
-            } else {
-                break;
-            }
+        for (int i = 0; i < count; ++i) {
+            if (digits[i] != LONG_MIN_REP[i]) return false;
         }
-        return positive ? value : -value;
+
+        return true;
     }
 
     // The digit part of -9223372036854775808L
@@ -744,12 +732,5 @@ final class DigitList implements Cloneable {
         if (len > digits.length) {
             digits = new char[len];
         }
-    }
-
-    private final char[] getDataChars(int length) {
-        if (data == null || data.length < length) {
-            data = new char[length];
-        }
-        return data;
     }
 }

@@ -25,6 +25,7 @@ package org.openjdk.bench.java.text;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.math.BigDecimal;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -51,12 +52,18 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 public class DefFormatterBench {
 
     public double[] values;
+    public BigDecimal[] bdValues;
 
     @Setup
     public void setup() {
         values = new double[] {
             1.23, 1.49, 1.80, 1.7, 0.0, -1.49, -1.50, 9999.9123, 1.494, 1.495, 1.03, 25.996, -25.996
         };
+
+        bdValues = new BigDecimal[values.length];
+        for (int i = 0; i < values.length; i++) {
+            bdValues[i] = new BigDecimal(values[i]);
+        }
     }
 
     private DefNumberFormat dnf = new DefNumberFormat();
@@ -65,6 +72,13 @@ public class DefFormatterBench {
     @OperationsPerInvocation(13)
     public void testDefNumberFormatter(final Blackhole blackhole) {
         for (double value : values) {
+            blackhole.consume(this.dnf.format(value));
+        }
+    }
+    @Benchmark
+    @OperationsPerInvocation(13)
+    public void testBdDefNumberFormatter(final Blackhole blackhole) {
+        for (BigDecimal value : bdValues) {
             blackhole.consume(this.dnf.format(value));
         }
     }
@@ -86,6 +100,10 @@ public class DefFormatterBench {
         }
 
         public String format(final double d) {
+            return this.n.format(d);
+        }
+
+        public String format(final BigDecimal d) {
             return this.n.format(d);
         }
     }

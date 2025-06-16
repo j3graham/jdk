@@ -27,6 +27,8 @@ package jdk.internal.math;
 
 import jdk.internal.vm.annotation.Stable;
 
+import java.util.Arrays;
+
 /**
  * A class for converting between ASCII and decimal representations of a single
  * or double precision floating point number. Most conversions are provided via
@@ -57,6 +59,44 @@ public class FloatingDecimal{
     static final int    SINGLE_MAX_NDIGITS = 200;
 
     static final int    INT_DECIMAL_DIGITS = 9;
+
+    /**
+     * Converts a double precision floating point value to a <code>String</code>.
+     *
+     * @param d The double precision value.
+     * @return The value converted to a <code>String</code>.
+     */
+    public static String toJavaFormatString(double d) {
+        return getBinaryToASCIIConverter(d).toJavaFormatString();
+    }
+
+    /**
+     * Converts a single precision floating point value to a <code>String</code>.
+     *
+     * @param f The single precision value.
+     * @return The value converted to a <code>String</code>.
+     */
+    public static String toJavaFormatString(float f) {
+        return getBinaryToASCIIConverter(f).toJavaFormatString();
+    }
+
+    /**
+     * Appends a double precision floating point value to an <code>Appendable</code>.
+     * @param d The double precision value.
+     * @param buf The <code>Appendable</code> with the value appended.
+     */
+    public static void appendTo(double d, Appendable buf) {
+        getBinaryToASCIIConverter(d).appendTo(buf);
+    }
+
+    /**
+     * Appends a single precision floating point value to an <code>Appendable</code>.
+     * @param f The single precision value.
+     * @param buf The <code>Appendable</code> with the value appended.
+     */
+    public static void appendTo(float f, Appendable buf) {
+        getBinaryToASCIIConverter(f).appendTo(buf);
+    }
 
     /**
      * Converts a <code>String</code> to a double precision floating point value.
@@ -100,6 +140,17 @@ public class FloatingDecimal{
      * values into an ASCII <code>String</code> representation.
      */
     public interface BinaryToASCIIConverter {
+        /**
+         * Converts a floating point value into an ASCII <code>String</code>.
+         * @return The value converted to a <code>String</code>.
+         */
+        String toJavaFormatString();
+
+        /**
+         * Appends a floating point value to an <code>Appendable</code>.
+         * @param buf The <code>Appendable</code> to receive the value.
+         */
+        void appendTo(Appendable buf);
 
         /**
          * Retrieves the decimal exponent most closely corresponding to this value.
@@ -155,6 +206,22 @@ public class FloatingDecimal{
         public ExceptionalBinaryToASCIIBuffer(String image, boolean isNegative) {
             this.image = image;
             this.isNegative = isNegative;
+        }
+
+        @Override
+        public String toJavaFormatString() {
+            return image;
+        }
+
+        @Override
+        public void appendTo(Appendable buf) {
+            if (buf instanceof StringBuilder) {
+                ((StringBuilder) buf).append(image);
+            } else if (buf instanceof StringBuffer) {
+                ((StringBuffer) buf).append(image);
+            } else {
+                assert false;
+            }
         }
 
         @Override
@@ -238,6 +305,24 @@ public class FloatingDecimal{
             this.digits = digits;
             this.firstDigitIndex = 0;
             this.nDigits = digits.length;
+        }
+
+        @Override
+        public String toJavaFormatString() {
+            int len = getChars(buffer);
+            return new String(buffer, 0, len);
+        }
+
+        @Override
+        public void appendTo(Appendable buf) {
+            int len = getChars(buffer);
+            if (buf instanceof StringBuilder) {
+                ((StringBuilder) buf).append(buffer, 0, len);
+            } else if (buf instanceof StringBuffer) {
+                ((StringBuffer) buf).append(buffer, 0, len);
+            } else {
+                assert false;
+            }
         }
 
         @Override
@@ -760,6 +845,14 @@ public class FloatingDecimal{
             }
         }
 
+        private static int insignificantDigits(long insignificant) {
+            int i;
+            for ( i = 0; insignificant >= 10L; i++ ) {
+                insignificant /= 10L;
+            }
+            return i;
+        }
+
         /**
          * Calculates
          * <pre>
@@ -819,6 +912,77 @@ public class FloatingDecimal{
                 59,
                 61,
         };
+
+        private int getChars(char[] result) {
+            assert nDigits <= 19 : nDigits; // generous bound on size of nDigits
+            int i = 0;
+            if (isNegative) {
+                result[0] = '-';
+                i = 1;
+            }
+            if (decExponent > 0 && decExponent < 8) {
+                // print digits.digits.
+                int charLength = Math.min(nDigits, decExponent);
+                System.arraycopy(digits, firstDigitIndex, result, i, charLength);
+                i += charLength;
+                if (charLength < decExponent) {
+                    charLength = decExponent - charLength;
+                    Arrays.fill(result,i,i+charLength,'0');
+                    i += charLength;
+                    result[i++] = '.';
+                    result[i++] = '0';
+                } else {
+                    result[i++] = '.';
+                    if (charLength < nDigits) {
+                        int t = nDigits - charLength;
+                        System.arraycopy(digits, firstDigitIndex+charLength, result, i, t);
+                        i += t;
+                    } else {
+                        result[i++] = '0';
+                    }
+                }
+            } else if (decExponent <= 0 && decExponent > -3) {
+                result[i++] = '0';
+                result[i++] = '.';
+                if (decExponent != 0) {
+                    Arrays.fill(result, i, i-decExponent, '0');
+                    i -= decExponent;
+                }
+                System.arraycopy(digits, firstDigitIndex, result, i, nDigits);
+                i += nDigits;
+            } else {
+                result[i++] = digits[firstDigitIndex];
+                result[i++] = '.';
+                if (nDigits > 1) {
+                    System.arraycopy(digits, firstDigitIndex+1, result, i, nDigits - 1);
+                    i += nDigits - 1;
+                } else {
+                    result[i++] = '0';
+                }
+                result[i++] = 'E';
+                int e;
+                if (decExponent <= 0) {
+                    result[i++] = '-';
+                    e = -decExponent + 1;
+                } else {
+                    e = decExponent - 1;
+                }
+                // decExponent has 1, 2, or 3, digits
+                if (e <= 9) {
+                    result[i++] = (char) (e + '0');
+                } else if (e <= 99) {
+                    result[i++] = (char) (e / 10 + '0');
+                    result[i++] = (char) (e % 10 + '0');
+                } else {
+                    result[i++] = (char) (e / 100 + '0');
+                    e %= 100;
+                    result[i++] = (char) (e / 10 + '0');
+                    result[i++] = (char) (e % 10 + '0');
+                }
+            }
+            return i;
+        }
+
     }
 
     private static final ThreadLocal<BinaryToASCIIBuffer> threadLocalBinaryToASCIIBuffer =

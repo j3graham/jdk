@@ -322,8 +322,8 @@ final class DigitList implements Cloneable {
                         int maximumDigits, boolean fixedPoint) {
 
         if(!nonZeroAfterIndex(0)){
-            count=0;
-            decimalAt=0;
+            count = 0;
+            decimalAt = 0;
             return;
         }
         decimalAt = count + exp;
@@ -621,7 +621,7 @@ final class DigitList implements Cloneable {
         String s = source.unscaledValue().toString();
         extendDigits(s.length());
         s.getChars(0, s.length(), digits, 0);
-        count=s.length();
+        count = s.length();
         adjust(-source.scale(),
             false, true,
             maximumDigits, fixedPoint);
@@ -699,22 +699,6 @@ final class DigitList implements Cloneable {
         } catch (CloneNotSupportedException e) {
             throw new InternalError(e);
         }
-    }
-
-    /**
-     * Returns true if this DigitList represents Long.MIN_VALUE;
-     * false, otherwise.  This is required so that getLong() works.
-     */
-    private boolean isLongMIN_VALUE() {
-        if (decimalAt != count || count != MAX_COUNT) {
-            return false;
-        }
-
-        for (int i = 0; i < count; ++i) {
-            if (digits[i] != LONG_MIN_REP[i]) return false;
-        }
-
-        return true;
     }
 
     // The digit part of -9223372036854775808L

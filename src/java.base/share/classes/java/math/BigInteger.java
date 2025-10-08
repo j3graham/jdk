@@ -534,7 +534,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
 
         // Check for at most one leading sign
         int sign = 1;
-        int index1 = val.lastIndexOf('-');
+        int index1 = val.charAt(0)=='-' ? 0 : -1;
         int index2 = val.lastIndexOf('+');
         if (index1 >= 0) {
             if (index1 != 0 || index2 >= 0) {
@@ -589,7 +589,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
         int groupVal = 0;
         while (cursor < len) {
             group = val.substring(cursor, cursor += digitsPerInt[radix]);
-            groupVal = Integer.parseInt(group, radix);
+            groupVal = Integer.parseUnsignedInt(group, radix);
             if (groupVal < 0)
                 throw new NumberFormatException("Illegal digit");
             destructiveMulAdd(magnitude, superRadix, groupVal);
@@ -685,23 +685,26 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
         long zlong = z & LONG_MASK;
         int len = x.length;
 
-        long product = 0;
-        long carry = 0;
-        for (int i = len-1; i >= 0; i--) {
+        // unroll first iteration
+        long product = ylong * (x[len-1] & LONG_MASK) + zlong;
+        x[len-1] = (int)product;
+        long carry = product >>> 32;
+
+        for (int i = len-2; i >= 0; i--) {
             product = ylong * (x[i] & LONG_MASK) + carry;
             x[i] = (int)product;
             carry = product >>> 32;
         }
-
-        // Perform the addition
-        long sum = (x[len-1] & LONG_MASK) + zlong;
-        x[len-1] = (int)sum;
-        carry = sum >>> 32;
-        for (int i = len-2; i >= 0; i--) {
-            sum = (x[i] & LONG_MASK) + carry;
-            x[i] = (int)sum;
-            carry = sum >>> 32;
-        }
+//
+//        // Perform the addition
+//        long sum = (x[len-1] & LONG_MASK) + zlong;
+//        x[len-1] = (int)sum;
+//        carry = sum >>> 32;
+//        for (int i = len-2; i >= 0; i--) {
+//            sum = (x[i] & LONG_MASK) + carry;
+//            x[i] = (int)sum;
+//            carry = sum >>> 32;
+//        }
     }
 
     /**

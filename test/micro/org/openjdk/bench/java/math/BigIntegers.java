@@ -49,6 +49,7 @@ import java.util.concurrent.TimeUnit;
 public class BigIntegers {
 
     private BigInteger[] hugeArray, largeArray, smallArray, shiftArray;
+    private String[] hugeStringArray, largeStringArray, smallStringArray;
     public String[] dummyStringArray;
     public Object[] dummyArr;
     private static final int TESTSIZE = 1000;
@@ -58,15 +59,18 @@ public class BigIntegers {
         Random r = new Random(1123);
         int numbits = r.nextInt(16384);
 
+        hugeStringArray = new String[TESTSIZE];
         hugeArray = new BigInteger[TESTSIZE]; /*
          * Huge numbers larger than
          * MAX_LONG
          */
+        largeStringArray = new String[TESTSIZE];
         largeArray = new BigInteger[TESTSIZE]; /*
          * Large numbers less than
          * MAX_LONG but larger than
          * MAX_INT
          */
+        smallStringArray = new String[TESTSIZE];
         smallArray = new BigInteger[TESTSIZE]; /*
          * Small number less than
          * MAX_INT
@@ -82,13 +86,47 @@ public class BigIntegers {
         for (int i = 0; i < TESTSIZE; i++) {
             int value = Math.abs(r.nextInt());
 
-            hugeArray[i] = new BigInteger("" + ((long) value + (long) Integer.MAX_VALUE)
-                    + ((long) value + (long) Integer.MAX_VALUE));
-            largeArray[i] = new BigInteger("" + ((long) value + (long) Integer.MAX_VALUE));
-            smallArray[i] = new BigInteger("" + ((long) value / 1000));
+            String huge = "" + ((long) value + (long) Integer.MAX_VALUE)
+                    + ((long) value + (long) Integer.MAX_VALUE);
+            hugeStringArray[i] = huge;
+            hugeArray[i] = new BigInteger(huge);
+
+            String large = "" + ((long) value + (long) Integer.MAX_VALUE);
+            largeStringArray[i] = large;
+            largeArray[i] = new BigInteger(large);
+
+            String small = "" + ((long) value / 1000);
+            smallStringArray[i] = small;
+            smallArray[i] = new BigInteger(small);
+
             shiftArray[i] = new BigInteger(numbits, r);
         }
     }
+
+    @Benchmark
+    @OperationsPerInvocation(TESTSIZE)
+    public void testHugeFromString(Blackhole bh) {
+        for (String s : hugeStringArray) {
+            bh.consume(new BigInteger(s));
+        }
+    }
+
+    @Benchmark
+    @OperationsPerInvocation(TESTSIZE)
+    public void testLargeFromString(Blackhole bh) {
+        for (String s : largeStringArray) {
+            bh.consume(new BigInteger(s));
+        }
+    }
+
+    @Benchmark
+    @OperationsPerInvocation(TESTSIZE)
+    public void testSmallFromString(Blackhole bh) {
+        for (String s : smallStringArray) {
+            bh.consume(new BigInteger(s));
+        }
+    }
+
 
     /** Test BigInteger.toString() with huge numbers larger than MAX_LONG */
     @Benchmark
